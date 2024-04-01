@@ -6,7 +6,7 @@
 ## 功能说明
 
 ### 初始化和设置
-- 定义脚本版本号`CURRENT_VERSION`为`v2.03`。
+- 定义脚本版本号`CURRENT_VERSION`。
 - 设置ANSI颜色代码数组`colors`，用于后续输出文本时使用不同颜色。
 - 定义没有颜色的ANSI代码`NC`。
 - 定义函数`random_color`，用于从`colors`数组中随机选择一个颜色代码。
