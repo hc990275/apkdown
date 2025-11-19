@@ -5,7 +5,7 @@ on:
     tags:
       - "v*"
 
-# 🔥 关键：允许 GITHUB_TOKEN 写入仓库内容（创建 Release 必须要这个）
+# 关键：允许 GITHUB_TOKEN 写入仓库内容（创建 Release、上传资产）
 permissions:
   contents: write
 
@@ -23,19 +23,41 @@ jobs:
           pwd
           ls -al
 
-      - name: Prepare release script asset
+      - name: Prepare release assets (sh + zip + tar.gz)
         run: |
-          echo "准备发布脚本文件..."
+          echo "准备发布资源..."
           if [ ! -f "apkdown.sh" ]; then
             echo "❌ apkdown.sh 不存在，工作流退出"
             exit 1
           fi
+
           chmod +x apkdown.sh || true
-          cp apkdown.sh "软件更新脚本_${{ github.ref_name }}.sh"
-          echo "生成的文件列表："
+
+          # 单脚本：软件更新脚本_vXX.sh
+          SCRIPT_ASSET="软件更新脚本_${{ github.ref_name }}.sh"
+          cp apkdown.sh "$SCRIPT_ASSET"
+
+          # 组合压缩包：包含主要文件（可按需再加）
+          ZIP_NAME="apkdown_${{ github.ref_name }}.zip"
+          TAR_NAME="apkdown_${{ github.ref_name }}.tar.gz"
+
+          echo "创建 zip 包: $ZIP_NAME"
+          zip -r "$ZIP_NAME" apkdown.sh CHANGELOG.md README.md .github 2>/dev/null || \
+            zip -r "$ZIP_NAME" apkdown.sh CHANGELOG.md .github 2>/dev/null || \
+            zip -r "$ZIP_NAME" apkdown.sh .github 2>/dev/null || \
+            zip -r "$ZIP_NAME" apkdown.sh
+
+          echo "创建 tar.gz 包: $TAR_NAME"
+          # tar 不存在某些文件也不会致命，就让它尽量多打包
+          tar -czf "$TAR_NAME" apkdown.sh CHANGELOG.md README.md .github 2>/dev/null || \
+            tar -czf "$TAR_NAME" apkdown.sh CHANGELOG.md .github 2>/dev/null || \
+            tar -czf "$TAR_NAME" apkdown.sh .github 2>/dev/null || \
+            tar -czf "$TAR_NAME" apkdown.sh
+
+          echo "当前目录文件列表："
           ls -al
 
-      - name: Create GitHub Release and upload asset
+      - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -44,6 +66,8 @@ jobs:
           body_path: CHANGELOG.md
           files: |
             软件更新脚本_${{ github.ref_name }}.sh
+            apkdown_${{ github.ref_name }}.zip
+            apkdown_${{ github.ref_name }}.tar.gz
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
