@@ -13,14 +13,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare release script asset
+      - name: Show repo files (debug)
         run: |
           echo "当前 tag: ${{ github.ref_name }}"
+          pwd
           ls -al
-          # 确保脚本有可执行权限
+
+      - name: Prepare release script asset
+        run: |
+          echo "准备发布脚本文件..."
+          if [ ! -f "apkdown.sh" ]; then
+            echo "❌ apkdown.sh 不存在，工作流退出"
+            exit 1
+          fi
           chmod +x apkdown.sh || true
-          # 拷贝一份并按你习惯的命名方式重命名
           cp apkdown.sh "软件更新脚本_${{ github.ref_name }}.sh"
+          echo "生成的文件列表："
           ls -al
 
       - name: Create GitHub Release and upload asset
@@ -28,11 +36,16 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
+          # 如果 CHANGELOG.md 不存在，不想因为这个失败就注释下一行
           body_path: CHANGELOG.md
           files: |
             软件更新脚本_${{ github.ref_name }}.sh
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
 
 
 
