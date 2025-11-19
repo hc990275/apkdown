@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v11.08 - 2025-11-19 17:04:29
+## v11.09 - 2025-11-19 17:05:07
 
-chore: release v11.08 - 只保留最新CHANGELOG & 清理bak
+chore: release v11.09 - 只保留最新CHANGELOG & 清理bak
 
