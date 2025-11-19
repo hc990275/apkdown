@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
 
+# 🔥 关键：允许 GITHUB_TOKEN 写入仓库内容（创建 Release 必须要这个）
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -36,7 +40,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          # 如果 CHANGELOG.md 不存在，不想因为这个失败就注释下一行
+          # 有 CHANGELOG.md 就用，没有也不会失败
           body_path: CHANGELOG.md
           files: |
             软件更新脚本_${{ github.ref_name }}.sh
