@@ -1,0 +1,38 @@
+name: Auto Release apkdown
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare release script asset
+        run: |
+          echo "当前 tag: ${{ github.ref_name }}"
+          ls -al
+          # 确保脚本有可执行权限
+          chmod +x apkdown.sh || true
+          # 拷贝一份并按你习惯的命名方式重命名
+          cp apkdown.sh "软件更新脚本_${{ github.ref_name }}.sh"
+          ls -al
+
+      - name: Create GitHub Release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+          files: |
+            软件更新脚本_${{ github.ref_name }}.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
