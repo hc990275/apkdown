@@ -2,6 +2,10 @@
 
 ## v11.05 (2025-11-19)
 
+- fix: grant contents write permission for auto release
+
+## v11.05 (2025-11-19)
+
 - fix: make auto release workflow more robust
 - fix: make auto release workflow more robust
 
