@@ -1,5 +1,9 @@
 # 更新日志
 
+## v11.04 (2025-11-19)
+
+
+
 ## v11.03 (2025-11-19)
 
 - chore: add auto release workflow
