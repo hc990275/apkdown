@@ -1,5 +1,10 @@
 # 更新日志
 
+## v11.06 (2025-11-19)
+
+- chore: release v11.05 - 自动发布修复测试
+- fix: grant contents write permission for auto release
+
 ## v11.05 (2025-11-19)
 
 - fix: grant contents write permission for auto release

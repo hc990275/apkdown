@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # --- 脚本配置 ---
-SCRIPT_VERSION="v11.05"
+SCRIPT_VERSION="v11.06"
 DEBUG="false"
 VERSION_DIR="/storage/emulated/0/0网站/下载专用/影视安装包更新/版本文件夹"
 user_agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36 EdgA/121.0.0.0"
