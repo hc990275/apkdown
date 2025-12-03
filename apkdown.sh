@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # --- 脚本配置 ---
-SCRIPT_VERSION="v11.09"
+SCRIPT_VERSION="v11.10"
 DEBUG="false"
 VERSION_DIR="/storage/emulated/0/0网站/下载专用/影视安装包更新/版本文件夹"
 user_agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36 EdgA/121.0.0.0"
@@ -11,8 +11,8 @@ declare -A TVBOX_INTERFACES=()
 
 # --- 版本信息 URL ---
 declare -A VERSION_URLS=(
-    ["OK版手机"]="https://raw.githubusercontent.com/lystv/fmapp/main/apk/release/mobile.json"
-    ["OK版电视"]="https://raw.githubusercontent.com/lystv/fmapp/main/apk/release/leanback.json"
+    ["OK版手机"]="https://raw.githubusercontent.com/lystv/fmapp/ok/apk/release/mobile.json"
+    ["OK版电视"]="https://raw.githubusercontent.com/lystv/fmapp/ok/apk/release/leanback.json"
     ["蜜蜂版手机"]="https://raw.githubusercontent.com/FongMi/Release/fongmi/apk/mobile.json"
     ["蜜蜂版电视"]="https://raw.githubusercontent.com/FongMi/Release/fongmi/apk/leanback.json"
     ["OK版Pro"]="https://raw.githubusercontent.com/lystv/fmapp/ok/apk/pro/v.txt"
@@ -20,12 +20,12 @@ declare -A VERSION_URLS=(
 
 # --- APK 下载链接映射 ---
 declare -A APK_PATHS=(
-    ["OK版手机_32"]="lystv/fmapp/main/apk/release/mobile-armeabi_v7a.apk"
-    ["OK版手机_64"]="lystv/fmapp/main/apk/release/mobile-arm64_v8a.apk"
-    ["OK版电视_32"]="lystv/fmapp/main/apk/release/leanback-armeabi_v7a.apk"
-    ["OK版电视_64"]="lystv/fmapp/main/apk/release/leanback-arm64_v8a.apk"
-    ["OK海信专版_APK"]="lystv/fmapp/main/apk/release/%E6%B5%B7%E4%BF%A1%E4%B8%93%E7%89%88.apk"
-    ["OK安卓4版本_APK"]="lystv/fmapp/main/apk/kitkat/leanback.apk"
+    ["OK版手机_32"]="lystv/fmapp/ok/apk/release/mobile-armeabi_v7a.apk"
+    ["OK版手机_64"]="lystv/fmapp/ok/apk/release/mobile-arm64_v8a.apk"
+    ["OK版电视_32"]="lystv/fmapp/ok/apk/release/leanback-armeabi_v7a.apk"
+    ["OK版电视_64"]="lystv/fmapp/ok/apk/release/leanback-arm64_v8a.apk"
+    ["OK海信专版_APK"]="lystv/fmapp/ok/apk/release/%E6%B5%B7%E4%BF%A1%E4%B8%93%E7%89%88.apk"
+    ["OK安卓4版本_APK"]="lystv/fmapp/ok/apk/kitkat/leanback.apk"
     ["OK版Pro_手机Pro"]="lystv/fmapp/ok/apk/pro/mobile-pro.apk"
     ["OK版Pro_手机emu-Pro"]="lystv/fmapp/ok/apk/pro/mobile-emu-pro.apk"
     ["OK版Pro_电视Pro"]="lystv/fmapp/ok/apk/pro/leanback-pro.apk"
