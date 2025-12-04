@@ -10,23 +10,30 @@ set -euo pipefail
 
 SCRIPT_FILE="apkdown.sh"
 
-# --- 核心改动开始 ---
-# 检查第一个参数是否存在
+# --- 核心改动 1: 版本号处理（自动添加 'v' 前缀） ---
 if [ $# -lt 1 ]; then
-  # 如果没有提供版本号参数，则提示用户输入
-  read -p "请输入目标版本号（例如 v11.08）：" VERSION
-  if [ -z "$VERSION" ]; then
+  # 提示用户输入时，说明只需输入数字
+  read -p "请输入目标版本号（例如 11.08）：" INPUT_VERSION
+  if [ -z "$INPUT_VERSION" ]; then
     echo "❌ 未输入版本号，发布取消。"
     exit 1
   fi
-  # 提交说明设置为默认值
+  # 检查是否已有 'v' 前缀，如果没有则添加
+  if [[ "$INPUT_VERSION" != v* ]]; then
+    VERSION="v$INPUT_VERSION"
+  else
+    VERSION="$INPUT_VERSION"
+  fi
   MESSAGE="chore: release $VERSION"
 else
   # 如果提供了参数，则按原逻辑赋值
-  VERSION="$1"                    # 例如 v11.08
+  VERSION="$1"
   MESSAGE="${2:-chore: release $VERSION}"
+  # 确保如果通过参数输入，也自动添加 'v' 前缀（可选，但更健壮）
+  if [[ "$VERSION" != v* ]]; then
+    VERSION="v$VERSION"
+  fi
 fi
-# --- 核心改动结束 ---
 
 echo "==============================="
 echo "  apkdown 一键发布脚本 v3.0"
@@ -113,10 +120,12 @@ echo "🔍 当前 Git 状态:"
 git status
 echo
 
-read -p "❓ 确认要继续提交并推送到远程吗？(y/N): " CONFIRM
-CONFIRM="${CONFIRM:-N}"
+# --- 核心改动 2: 自动确认（删除 read -p 步骤） ---
+echo "❓ 确认要继续提交并推送到远程吗？(y/N): y" # 模拟显示确认信息，但跳过等待
+CONFIRM="y" # 直接设置为 'y'
 
 if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+  # 理论上永远不会执行，但为了脚本完整性保留
   echo "⚠️ 已取消发布。"
   exit 0
 fi
