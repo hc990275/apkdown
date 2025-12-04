@@ -10,13 +10,23 @@ set -euo pipefail
 
 SCRIPT_FILE="apkdown.sh"
 
+# --- 核心改动开始 ---
+# 检查第一个参数是否存在
 if [ $# -lt 1 ]; then
-  echo "用法: $0 <版本号(例如 v11.08)> [提交说明]"
-  exit 1
+  # 如果没有提供版本号参数，则提示用户输入
+  read -p "请输入目标版本号（例如 v11.08）：" VERSION
+  if [ -z "$VERSION" ]; then
+    echo "❌ 未输入版本号，发布取消。"
+    exit 1
+  fi
+  # 提交说明设置为默认值
+  MESSAGE="chore: release $VERSION"
+else
+  # 如果提供了参数，则按原逻辑赋值
+  VERSION="$1"                    # 例如 v11.08
+  MESSAGE="${2:-chore: release $VERSION}"
 fi
-
-VERSION="$1"                    # 例如 v11.08
-MESSAGE="${2:-chore: release $VERSION}"
+# --- 核心改动结束 ---
 
 echo "==============================="
 echo "  apkdown 一键发布脚本 v3.0"
