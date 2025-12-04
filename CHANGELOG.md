@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v11.10 - 2025-12-04 10:06:34
+## 11.11 - 2025-12-04 10:12:29
 
-chore: release v11.10 - 更新APK地址
+chore: release 11.11
 
