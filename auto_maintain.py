@@ -3,6 +3,10 @@ import json
 import re
 import datetime
 import os
+import sys
+
+# ✅ 强制将标准输出设置为 UTF-8，防止 Windows 控制台打印中文报错
+sys.stdout.reconfigure(encoding='utf-8')
 
 # --- 配置区域 ---
 SOURCE_JSON = "https://raw.githubusercontent.com/lystv/fmapp/app/yysd-zl.json"
