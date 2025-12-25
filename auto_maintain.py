@@ -5,7 +5,7 @@ import datetime
 import os
 import sys
 
-# ✅ 强制将标准输出设置为 UTF-8，防止 Windows 控制台打印中文报错
+# 强制 UTF-8 输出
 sys.stdout.reconfigure(encoding='utf-8')
 
 # --- 配置区域 ---
@@ -133,7 +133,7 @@ def update_changelog(version, info):
 if __name__ == "__main__":
     ver = get_new_version()
     
-    # ✅ 核心修改：将版本号直接写入文件，而不是打印到控制台
+    # ✅ 修复重点：将版本号写入文件，不再依赖控制台输出
     with open("version.txt", "w", encoding="utf-8") as f:
         f.write(ver)
     print(f"Generated version: {ver} (saved to version.txt)")
