@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 
 # --- 脚本配置 ---
-SCRIPT_VERSION="v12.01" # 自动替换
+SCRIPT_VERSION="v2025.12.25_0526" # 自动替换
 download_dir="/storage/emulated/0/0网站/下载专用/影视安装包更新"
 
 # --- 应用版本号 (将被自动化脚本替换) ---
-OK_VER_MOBILE="检测中..."
-OK_VER_TV="检测中..."
-OK_VER_PRO="检测中..."
-OK_VER_4X="检测中..."
-FM_VER_MOBILE="检测中..."
-FM_VER_TV="检测中..."
+OK_VER_MOBILE="OK-3.5.7"
+OK_VER_TV="OK-3.5.7"
+OK_VER_PRO="OK-3.8.8-pro"
+OK_VER_4X="OK-2.5.0"
+FM_VER_MOBILE="FM-5.0.4"
+FM_VER_TV="FM-5.0.4"
 
 # --- APK 下载链接 (将被自动化脚本替换) ---
 declare -A APK_PATHS=(
-    ["OK版手机_32"]="lystv/fmapp/ok/apk/release/mobile-armeabi_v7a.apk"
-    ["OK版电视_32"]="lystv/fmapp/ok/apk/release/leanback-armeabi_v7a.apk"
-    ["OK安卓4版本_APK"]="lystv/fmapp/ok/apk/kitkat/leanback.apk"
-    ["OK版Pro_手机Pro"]="lystv/fmapp/ok/apk/pro/mobile-pro.apk"
-    ["OK版Pro_电视Pro"]="lystv/fmapp/ok/apk/pro/leanback-pro.apk"
-    ["蜜蜂版手机_32"]="FongMi/Release/fongmi/apk/mobile-armeabi_v7a.apk"
-    ["蜜蜂版电视_32"]="FongMi/Release/fongmi/apk/leanback-armeabi_v7a.apk"
+    ["OK版手机_32"]="lystv/fmapp/54dbf376f4fca72e12061e13fb689db87f99235b/apk/release/mobile-armeabi_v7a.apk"
+    ["OK版电视_32"]="lystv/fmapp/54dbf376f4fca72e12061e13fb689db87f99235b/apk/release/leanback-armeabi_v7a.apk"
+    ["OK安卓4版本_APK"]="lystv/fmapp/93fd99c68e7bddc4b903a2fe12fdbd372630610b/apk/kitkat/leanback.apk"
+    ["OK版Pro_手机Pro"]="lystv/fmapp/08b161ad2417393aca9141ad63956c917e5fbd65/apk/pro/mobile-pro.apk"
+    ["OK版Pro_电视Pro"]="lystv/fmapp/08b161ad2417393aca9141ad63956c917e5fbd65/apk/pro/leanback-pro.apk"
+    ["蜜蜂版手机_32"]="fongmi/release/38ecab09fba63ecf10ef5eb92951b9554bb9f803/apk/mobile-armeabi_v7a.apk"
+    ["蜜蜂版电视_32"]="fongmi/release/38ecab09fba63ecf10ef5eb92951b9554bb9f803/apk/leanback-armeabi_v7a.apk"
 )
 
 # --- 辅助函数 ---
