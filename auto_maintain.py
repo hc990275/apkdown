@@ -5,41 +5,42 @@ import datetime
 import os
 
 # --- 配置区域 ---
-# 目标数据源已修改为 lystv
 SOURCE_JSON = "https://raw.githubusercontent.com/lystv/fmapp/app/yysd-zl.json"
 SH_FILE = "apkdown.sh"
 PY_FILE = "PY版本.PY"
+LOG_FILE = "CHANGELOG.md"
 
 def get_new_version():
-    """生成基于日期的版本号，例如 v2024.12.25"""
-    return datetime.datetime.now().strftime("v%Y.%m.%d")
+    """生成带时间戳的版本号，确保每次运行强制变更"""
+    return datetime.datetime.now().strftime("v%Y.%m.%d_%H%M")
 
 def fetch_data():
     """获取源 JSON 数据"""
     print(f"Downloading {SOURCE_JSON}...")
-    # 增加 verify=False 以防 SSL 证书偶发问题，通常 GitHub raw 不需要，但加上更稳
-    resp = requests.get(SOURCE_JSON, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
-    
-    # 提取“推薦”列表
-    for category in data:
-        if category.get("name") == "推薦":
-            return category.get("list", [])
-    return []
+    try:
+        resp = requests.get(SOURCE_JSON, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        # 提取“推薦”列表
+        for category in data:
+            if category.get("name") == "推薦":
+                print("Found '推薦' list.")
+                return category.get("list", [])
+        return []
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return []
 
-def extract_base_paths(rec_list):
-    """从推荐列表中提取基础路径 (Commit Hash 路径)"""
+def extract_paths(rec_list):
+    """
+    仅提取推荐列表中的7个关键路径 (去掉了 64位 和 emu-pro)
+    """
     mapping = {}
     
-    # 辅助：移除 https://raw.githubusercontent.com/ 和 文件名
-    def get_base(url):
-        clean = url.replace("https://raw.githubusercontent.com/", "")
-        return clean.rsplit('/', 1)[0] + "/"
-    
-    # 辅助：获取完整URL (用于 OK 4.x 这种单独文件)
-    def get_full_content(url):
-         return url.replace("https://raw.githubusercontent.com/", "")
+    # 辅助：获取相对路径 (去掉 https://raw.githubusercontent.com/)
+    def get_rel_path(url):
+        return url.replace("https://raw.githubusercontent.com/", "")
 
     for item in rec_list:
         name = item.get("name", "")
@@ -47,135 +48,151 @@ def extract_base_paths(rec_list):
         version = item.get("version", "")
         
         if not url: continue
-
-        # 1. OK 手机/电视/海信 (通常共享同一个 Release 目录)
-        if "手機" in name and "OK" in version and "pro" not in name.lower():
-            mapping["OK_RELEASE_BASE"] = get_base(url)
         
-        # 2. OK Pro (手机/电视 Pro 共享)
-        if "pro" in name.lower() and "OK" in version:
-            mapping["OK_PRO_BASE"] = get_base(url)
-            
-        # 3. OK 4.x (单独文件)
-        if "4.x" in name:
-            mapping["OK_4X_FILE"] = get_full_content(url)
-            
-        # 4. 蜜蜂版 (手机/电视 共享)
-        if "FM" in version:
-            mapping["FM_RELEASE_BASE"] = get_base(url)
+        path = get_rel_path(url)
+
+        # --- OK 版匹配逻辑 ---
+        if "OK" in version:
+            # OK 手机 32位
+            if "手機-32" in name:
+                mapping["OK_MOBILE_32"] = path
+            # OK 电视 32位
+            elif "電視-32" in name:
+                mapping["OK_TV_32"] = path
+            # OK 4.x (KitKat)
+            elif "4.x" in name:
+                mapping["OK_KITKAT"] = path
+            # OK Pro 手机 (排除 emu)
+            elif "手機pro" in name.lower() and "emu" not in name.lower():
+                mapping["OK_PRO_MOBILE"] = path
+            # OK Pro 电视
+            elif "電視pro" in name.lower():
+                mapping["OK_PRO_TV"] = path
+
+        # --- 蜜蜂版 (FM) 匹配逻辑 ---
+        elif "FM" in version:
+            # 蜜蜂 手机 32位
+            if "手機-32" in name:
+                mapping["FM_MOBILE_32"] = path
+            # 蜜蜂 电视 32位
+            elif "電視-32" in name:
+                mapping["FM_TV_32"] = path
             
     return mapping
 
 def update_sh_file(mapping, new_version):
     """更新 Shell 脚本"""
     if not os.path.exists(SH_FILE):
-        print(f"Warning: {SH_FILE} not found, skipping.")
-        return
+        return False
 
     with open(SH_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # 1. 更新版本号
-    # 匹配 SCRIPT_VERSION="v..."
+    # 1. 强制更新版本号
     content = re.sub(r'SCRIPT_VERSION="v[^"]+"', f'SCRIPT_VERSION="{new_version}"', content)
     
-    # 2. 更新链接 (利用正则替换 map 中的值)
-    # 映射关系：(Shell变量正则特征, Mapping Key, 文件名后缀)
+    # 2. 精准更新链接 (只更新映射中存在的)
+    # 格式: (Shell中的Key正则, Mapping中的Key)
     updates = [
-        # OK Release (手机/电视/海信)
-        (r'\["OK版手机_32"\]', "OK_RELEASE_BASE", "mobile-armeabi_v7a.apk"),
-        (r'\["OK版手机_64"\]', "OK_RELEASE_BASE", "mobile-arm64_v8a.apk"),
-        (r'\["OK版电视_32"\]', "OK_RELEASE_BASE", "leanback-armeabi_v7a.apk"),
-        (r'\["OK版电视_64"\]', "OK_RELEASE_BASE", "leanback-arm64_v8a.apk"),
-        (r'\["OK海信专版_APK"\]', "OK_RELEASE_BASE", "%E6%B5%B7%E4%BF%A1%E4%B8%93%E7%89%88.apk"),
-        
-        # OK Pro
-        (r'\["OK版Pro_手机Pro"\]', "OK_PRO_BASE", "mobile-pro.apk"),
-        (r'\["OK版Pro_手机emu-Pro"\]', "OK_PRO_BASE", "mobile-emu-pro.apk"),
-        (r'\["OK版Pro_电视Pro"\]', "OK_PRO_BASE", "leanback-pro.apk"),
-        
-        # OK 4.x
-        (r'\["OK安卓4版本_APK"\]', "OK_4X_FILE", ""), # 直接替换完整路径
-        
-        # 蜜蜂版
-        (r'\["蜜蜂版手机_32"\]', "FM_RELEASE_BASE", "mobile-armeabi_v7a.apk"),
-        (r'\["蜜蜂版手机_64"\]', "FM_RELEASE_BASE", "mobile-arm64_v8a.apk"),
-        (r'\["蜜蜂版电视_32"\]', "FM_RELEASE_BASE", "leanback-armeabi_v7a.apk"),
-        (r'\["蜜蜂版电视_64"\]', "FM_RELEASE_BASE", "leanback-arm64_v8a.apk"),
+        # OK版
+        (r'\["OK版手机_32"\]', "OK_MOBILE_32"),
+        (r'\["OK版电视_32"\]', "OK_TV_32"),
+        (r'\["OK安卓4版本_APK"\]', "OK_KITKAT"),
+        (r'\["OK版Pro_手机Pro"\]', "OK_PRO_MOBILE"),
+        (r'\["OK版Pro_电视Pro"\]', "OK_PRO_TV"),
+        # 蜜蜂版 (只更32位)
+        (r'\["蜜蜂版手机_32"\]', "FM_MOBILE_32"),
+        (r'\["蜜蜂版电视_32"\]', "FM_TV_32"),
     ]
 
-    for regex_start, map_key, suffix in updates:
+    for regex_start, map_key in updates:
         if map_key in mapping:
-            new_path = mapping[map_key] + suffix
-            # 正则：找到 ["KEY"]="OLD_VALUE" 替换为 ["KEY"]="NEW_VALUE"
+            new_path = mapping[map_key]
+            # 替换 ["KEY"]="VALUE" 中的 VALUE
             pattern = rf'({regex_start}=")([^"]+)(")'
             content = re.sub(pattern, rf'\1{new_path}\3', content)
 
-    # 关键：使用 newline='\n' 确保在 Windows 上运行时写入 Linux 换行符
+    # 写入文件 (强制 LF 换行符)
     with open(SH_FILE, 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)
     print(f"Updated {SH_FILE} to version {new_version}")
+    return True
 
 def update_py_file(mapping):
-    """更新 Python 脚本 (仅更新链接，不涉及版本号变量)"""
+    """更新 Python 脚本"""
     if not os.path.exists(PY_FILE):
-        print(f"Warning: {PY_FILE} not found, skipping.")
-        return
+        return False
 
     with open(PY_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
         
     updates = [
-        # OK Release
-        (r'"OK版手机_32"', "OK_RELEASE_BASE", "mobile-armeabi_v7a.apk"),
-        (r'"OK版手机_64"', "OK_RELEASE_BASE", "mobile-arm64_v8a.apk"),
-        (r'"OK版电视_32"', "OK_RELEASE_BASE", "leanback-armeabi_v7a.apk"),
-        (r'"OK版电视_64"', "OK_RELEASE_BASE", "leanback-arm64_v8a.apk"),
-        (r'"OK海信专版_APK"', "OK_RELEASE_BASE", "%E6%B5%B7%E4%BF%A1%E4%B8%93%E7%89%88.apk"),
-        
-        # OK 4.x
-        (r'"OK安卓4版本_APK"', "OK_4X_FILE", ""),
-        
-        # OK Pro
-        (r'"OK版Pro_手机Pro"', "OK_PRO_BASE", "mobile-pro.apk"),
-        (r'"OK版Pro_手机emu-Pro"', "OK_PRO_BASE", "mobile-emu-pro.apk"),
-        (r'"OK版Pro_电视Pro"', "OK_PRO_BASE", "leanback-pro.apk"),
+        # OK版
+        (r'"OK版手机_32"', "OK_MOBILE_32"),
+        (r'"OK版电视_32"', "OK_TV_32"),
+        (r'"OK安卓4版本_APK"', "OK_KITKAT"),
+        (r'"OK版Pro_手机Pro"', "OK_PRO_MOBILE"),
+        (r'"OK版Pro_电视Pro"', "OK_PRO_TV"),
         
         # 蜜蜂版
-        (r'"蜜蜂版手机_PY32"', "FM_RELEASE_BASE", "mobile-armeabi_v7a.apk"),
-        (r'"蜜蜂版手机_PY64"', "FM_RELEASE_BASE", "mobile-arm64_v8a.apk"),
-        (r'"蜜蜂版手机_JAVA32"', "FM_RELEASE_BASE", "mobile-armeabi_v7a.apk"),
-        (r'"蜜蜂版手机_JAVA64"', "FM_RELEASE_BASE", "mobile-arm64_v8a.apk"),
-        (r'"蜜蜂版电视_PY32"', "FM_RELEASE_BASE", "leanback-armeabi_v7a.apk"),
-        (r'"蜜蜂版电视_PY64"', "FM_RELEASE_BASE", "leanback-arm64_v8a.apk"),
-        (r'"蜜蜂版电视_JAVA32"', "FM_RELEASE_BASE", "leanback-armeabi_v7a.apk"),
-        (r'"蜜蜂版电视_JAVA64"', "FM_RELEASE_BASE", "leanback-arm64_v8a.apk"),
+        # 无论 PY版本 里的 Key 叫什么 (PY32 还是 JAVA32)，都指向推荐列表里的 FM 32位链接
+        (r'"蜜蜂版手机_PY32"', "FM_MOBILE_32"),
+        (r'"蜜蜂版手机_JAVA32"', "FM_MOBILE_32"), # 如果有Java键值也一并更新
+        (r'"蜜蜂版电视_PY32"', "FM_TV_32"),
+        (r'"蜜蜂版电视_JAVA32"', "FM_TV_32"),
     ]
 
-    for regex_key, map_key, suffix in updates:
+    for regex_key, map_key in updates:
         if map_key in mapping:
-            new_path = mapping[map_key] + suffix
-            # 正则: "KEY": "OLD_VALUE"
+            new_path = mapping[map_key]
+            # 替换 "KEY": "VALUE" 中的 VALUE
             pattern = rf'({regex_key}:\s*")([^"]+)(")'
             content = re.sub(pattern, rf'\1{new_path}\3', content)
 
-    # 保持一致性
     with open(PY_FILE, 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)
     print(f"Updated {PY_FILE}")
+    return True
+
+def update_changelog(version):
+    """倒叙写入日志"""
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    new_entry = f"""## [{version}] - {now_str}
+- 🚀 自动同步 "推薦" 列表
+- 📦 已更新 OK版(32位/Pro/4.x) 和 蜜蜂版(32位)
+- ✂️ 移除了 64位 和 emu-pro 的更新逻辑
+
+"""
+    old_content = ""
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, 'r', encoding='utf-8') as f:
+            old_content = f.read()
+            
+    with open(LOG_FILE, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(new_entry + old_content)
+    print(f"Log appended to start of {LOG_FILE}")
 
 if __name__ == "__main__":
     try:
         new_ver = get_new_version()
-        # 输出版本号供 GitHub Actions 读取 (兼容旧版和新版 Actions)
         print(f"::set-output name=new_version::{new_ver}")
         
         rec_list = fetch_data()
-        mapping = extract_base_paths(rec_list)
+        if not rec_list:
+            print("Fetching data failed or empty.")
+            # 即使没数据，因为要强制运行(改版本号)，我们继续，但不更新链接
+            # mapping 将为空
         
+        mapping = extract_paths(rec_list)
+        
+        # 打印一下抓到的路径，方便调试
+        print("Extracted Mapping:", json.dumps(mapping, indent=2, ensure_ascii=False))
+
+        # 执行更新
         update_sh_file(mapping, new_ver)
         update_py_file(mapping)
-        
+        update_changelog(new_ver)
+
     except Exception as e:
         print(f"Error: {e}")
         exit(1)
