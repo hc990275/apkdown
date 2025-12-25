@@ -71,7 +71,9 @@ def update_sh_file(info, new_version):
     if not os.path.exists(SH_FILE): return
     with open(SH_FILE, 'r', encoding='utf-8') as f: content = f.read()
 
+    # 更新 Shell 脚本自身版本
     content = re.sub(r'SCRIPT_VERSION="v[^"]+"', f'SCRIPT_VERSION="{new_version}"', content)
+    
     for key, val in info["vers"].items():
         content = re.sub(rf'{key}="[^"]*"', f'{key}="{val}"', content)
     
@@ -92,9 +94,12 @@ def update_sh_file(info, new_version):
     with open(SH_FILE, 'w', encoding='utf-8', newline='\n') as f: f.write(content)
     print(f"Updated {SH_FILE}")
 
-def update_py_file(info):
+def update_py_file(info, new_version):
     if not os.path.exists(PY_FILE): return
     with open(PY_FILE, 'r', encoding='utf-8') as f: content = f.read()
+
+    # ✅ 新增：更新 Python/EXE 工具自身版本号
+    content = re.sub(r'TOOL_VERSION\s*=\s*"[^"]*"', f'TOOL_VERSION = "{new_version}"', content)
 
     for key, val in info["vers"].items():
         content = re.sub(rf'{key}\s*=\s*"[^"]*"', f'{key} = "{val}"', content)
@@ -133,7 +138,6 @@ def update_changelog(version, info):
 if __name__ == "__main__":
     ver = get_new_version()
     
-    # ✅ 修复重点：将版本号写入文件，不再依赖控制台输出
     with open("version.txt", "w", encoding="utf-8") as f:
         f.write(ver)
     print(f"Generated version: {ver} (saved to version.txt)")
@@ -141,5 +145,5 @@ if __name__ == "__main__":
     rec_list = fetch_data()
     info = extract_info(rec_list)
     update_sh_file(info, ver)
-    update_py_file(info)
+    update_py_file(info, ver) # 传入 version
     update_changelog(ver, info)
