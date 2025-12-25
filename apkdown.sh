@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # --- 脚本配置 ---
-SCRIPT_VERSION="v2025.12.25_2140" # 自动替换
+SCRIPT_VERSION="v2025.12.25_2150" # 自动替换
 REPO="hc990275/apkdown" # 您的仓库地址，用于检测脚本更新
 download_dir="/storage/emulated/0/0网站/下载专用/影视安装包更新"
 
