@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # --- 脚本配置 ---
-SCRIPT_VERSION="v2025.12.25_0517" # 自动替换
+SCRIPT_VERSION="v2025.12.25_0525" # 自动替换
 download_dir="/storage/emulated/0/0网站/下载专用/影视安装包更新"
 
 # --- 应用版本号 (将被自动化脚本替换) ---
