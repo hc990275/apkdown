@@ -5,6 +5,7 @@ import datetime
 import os
 
 # --- 配置区域 ---
+# 目标数据源已修改为 lystv
 SOURCE_JSON = "https://raw.githubusercontent.com/lystv/fmapp/app/yysd-zl.json"
 SH_FILE = "apkdown.sh"
 PY_FILE = "PY版本.PY"
@@ -16,7 +17,8 @@ def get_new_version():
 def fetch_data():
     """获取源 JSON 数据"""
     print(f"Downloading {SOURCE_JSON}...")
-    resp = requests.get(SOURCE_JSON)
+    # 增加 verify=False 以防 SSL 证书偶发问题，通常 GitHub raw 不需要，但加上更稳
+    resp = requests.get(SOURCE_JSON, timeout=30)
     resp.raise_for_status()
     data = resp.json()
     
@@ -27,10 +29,7 @@ def fetch_data():
     return []
 
 def extract_base_paths(rec_list):
-    """
-    从推荐列表中提取基础路径 (Commit Hash 路径)。
-    策略：找到一个文件，提取其目录，然后用于推导同类文件。
-    """
+    """从推荐列表中提取基础路径 (Commit Hash 路径)"""
     mapping = {}
     
     # 辅助：移除 https://raw.githubusercontent.com/ 和 文件名
@@ -69,6 +68,10 @@ def extract_base_paths(rec_list):
 
 def update_sh_file(mapping, new_version):
     """更新 Shell 脚本"""
+    if not os.path.exists(SH_FILE):
+        print(f"Warning: {SH_FILE} not found, skipping.")
+        return
+
     with open(SH_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -108,12 +111,17 @@ def update_sh_file(mapping, new_version):
             pattern = rf'({regex_start}=")([^"]+)(")'
             content = re.sub(pattern, rf'\1{new_path}\3', content)
 
-    with open(SH_FILE, 'w', encoding='utf-8') as f:
+    # 关键：使用 newline='\n' 确保在 Windows 上运行时写入 Linux 换行符
+    with open(SH_FILE, 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)
     print(f"Updated {SH_FILE} to version {new_version}")
 
 def update_py_file(mapping):
     """更新 Python 脚本 (仅更新链接，不涉及版本号变量)"""
+    if not os.path.exists(PY_FILE):
+        print(f"Warning: {PY_FILE} not found, skipping.")
+        return
+
     with open(PY_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
         
@@ -133,7 +141,7 @@ def update_py_file(mapping):
         (r'"OK版Pro_手机emu-Pro"', "OK_PRO_BASE", "mobile-emu-pro.apk"),
         (r'"OK版Pro_电视Pro"', "OK_PRO_BASE", "leanback-pro.apk"),
         
-        # 蜜蜂版 (PY版本里 key 包含 PY/JAVA，统一指向 Release Base)
+        # 蜜蜂版
         (r'"蜜蜂版手机_PY32"', "FM_RELEASE_BASE", "mobile-armeabi_v7a.apk"),
         (r'"蜜蜂版手机_PY64"', "FM_RELEASE_BASE", "mobile-arm64_v8a.apk"),
         (r'"蜜蜂版手机_JAVA32"', "FM_RELEASE_BASE", "mobile-armeabi_v7a.apk"),
@@ -151,14 +159,15 @@ def update_py_file(mapping):
             pattern = rf'({regex_key}:\s*")([^"]+)(")'
             content = re.sub(pattern, rf'\1{new_path}\3', content)
 
-    with open(PY_FILE, 'w', encoding='utf-8') as f:
+    # 保持一致性
+    with open(PY_FILE, 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)
     print(f"Updated {PY_FILE}")
 
 if __name__ == "__main__":
     try:
         new_ver = get_new_version()
-        # 输出版本号供 GitHub Actions 读取
+        # 输出版本号供 GitHub Actions 读取 (兼容旧版和新版 Actions)
         print(f"::set-output name=new_version::{new_ver}")
         
         rec_list = fetch_data()
