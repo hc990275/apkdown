@@ -9,7 +9,7 @@ defaults:
   run:
     shell: bash
 
-# ✅ 全局设置 Python IO 编码为 UTF-8，防止中文报错
+# ✅ 全局设置 Python IO 编码为 UTF-8
 env:
   PYTHONIOENCODING: utf-8
 
@@ -34,19 +34,18 @@ jobs:
       - name: 🚀 Run Maintenance Script
         id: script
         run: |
-          python auto_maintain.py > output.txt
-          cat output.txt
-          # ✅ 关键修复：增加 tr -d '\r' 去除 Windows 回车符，否则版本号会乱码
-          VER=$(grep "::set-output name=new_version::" output.txt | cut -d ':' -f 4 | tr -d '\r')
+          python auto_maintain.py
           
-          # 防止提取为空
-          if [ -z "$VER" ]; then
-            echo "Error: Version not found!"
-            exit 1
+          # ✅ 核心修改：直接从文件读取版本号，忽略所有控制台日志噪音
+          if [ -f "version.txt" ]; then
+             # tr -d '\r' 去除 Windows 回车符，tr -d '\n' 去除换行
+             VER=$(cat version.txt | tr -d '\r' | tr -d '\n')
+             echo "NEW_VERSION=$VER" >> $GITHUB_ENV
+             echo "Extracted Version: $VER"
+          else
+             echo "Error: version.txt not found!"
+             exit 1
           fi
-          
-          echo "NEW_VERSION=$VER" >> $GITHUB_ENV
-          echo "Extracted Version: $VER"
 
       - name: 🔨 Build EXE
         run: pyinstaller -F -w -n "影视更新工具" PY版本.PY
@@ -62,10 +61,9 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add apkdown.sh PY版本.PY CHANGELOG.md
           
-          # 提交代码
           git commit -m "chore: force update to ${{ env.NEW_VERSION }} [skip ci]"
           
-          # ✅ 关键修复：手动打标签并推送，确保 Release 插件 100% 成功
+          # 手动打标签，确保 Release 成功
           git tag ${{ env.NEW_VERSION }}
           git push origin ${{ env.NEW_VERSION }}
           git push
