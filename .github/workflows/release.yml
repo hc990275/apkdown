@@ -1,21 +1,20 @@
-name: Auto Update & Release (Exe Included)
+name: Auto Update & Release (30min)
 
 on:
   schedule:
-    # 每天北京时间 09:00 (UTC 01:00) 自动检查
-    - cron: '0 1 * * *'
+    # 每 30 分钟运行一次
+    - cron: '*/30 * * * *'
   workflow_dispatch: # 允许手动点击按钮触发
 
-# 设置默认 Shell 为 Bash，确保脚本命令在 Windows 上也能按 Unix 风格运行
 defaults:
   run:
     shell: bash
 
 jobs:
   update-and-release:
-    runs-on: windows-latest # 使用 Windows 环境以支持 EXE 打包
+    runs-on: windows-latest
     permissions:
-      contents: write # 必须权限：允许提交代码和创建 Release
+      contents: write 
 
     steps:
       - name: 📥 Checkout Code
@@ -29,28 +28,25 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           pip install requests pyinstaller
-          # requests: 用于 auto_maintain.py 下载 JSON
-          # pyinstaller: 用于将 PY版本.PY 打包成 exe
 
       - name: 🚀 Run Maintenance Script
         id: script
         run: |
+          # 脚本会修改版本号和链接，并输出 new_version
           python auto_maintain.py > output.txt
           cat output.txt
-          # 提取脚本输出的版本号
           VER=$(grep "::set-output name=new_version::" output.txt | cut -d ':' -f 4)
           echo "NEW_VERSION=$VER" >> $GITHUB_ENV
-          echo "Detected version: $VER"
 
       - name: 🔨 Build EXE
-        # 即使没有代码更新，为了发布 Release，我们也需要构建 exe
         run: |
-          # -F: 单文件, -w: 无黑框(GUI模式), -n: 文件名
+          # 打包 EXE，不显示黑框 (-w)，单文件 (-F)
           pyinstaller -F -w -n "影视更新工具" PY版本.PY
 
       - name: 🔍 Check for Changes
         id: git-check
         run: |
+          # 检查变更 (由于版本号变动，这里必定检测到变化)
           git diff --exit-code || echo "changes_detected=true" >> $GITHUB_OUTPUT
 
       - name: 💾 Commit & Push Changes
@@ -58,14 +54,13 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add apkdown.sh PY版本.PY
-          git commit -m "chore: auto update to ${{ env.NEW_VERSION }} [skip ci]"
+          git add apkdown.sh PY版本.PY CHANGELOG.md
+          git commit -m "chore: force update to ${{ env.NEW_VERSION }} [skip ci]"
           git push
 
       - name: 🔄 Prepare Release Assets
         if: steps.git-check.outputs.changes_detected == 'true'
         run: |
-          # 复制并重命名 Shell 脚本，符合发布命名习惯
           cp apkdown.sh "软件更新脚本_${{ env.NEW_VERSION }}.sh"
 
       - name: 🏷️ Create Release
@@ -77,11 +72,11 @@ jobs:
           body: |
             ## 🚀 自动更新日志
             - **版本**: `${{ env.NEW_VERSION }}`
-            - **数据源**: `lystv/fmapp` (yysd-zl.json)
+            - **更新策略**: 仅同步 "推薦" 列表中的 32位/Pro/4.x 版本
             
             ### 📂 附件下载
-            1. **Windows 用户**: 下载 `影视更新工具.exe`，直接运行即可。
-            2. **Android 用户**: 下载 `软件更新脚本_...sh`，推荐在 **MT管理器** 中运行。
+            1. **Windows**: `影视更新工具.exe` (已剔除emu-pro和64位逻辑)
+            2. **Android**: `软件更新脚本_...sh`
           files: |
             软件更新脚本_${{ env.NEW_VERSION }}.sh
             dist/影视更新工具.exe
