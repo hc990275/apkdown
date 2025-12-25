@@ -5,7 +5,7 @@ import datetime
 import os
 
 # --- 配置区域 ---
-SOURCE_JSON = "https://raw.githubusercontent.com/hc990275/fmapp/app/yysd-zl.json"
+SOURCE_JSON = "https://raw.githubusercontent.com/lystv/fmapp/app/yysd-zl.json"
 SH_FILE = "apkdown.sh"
 PY_FILE = "PY版本.PY"
 
