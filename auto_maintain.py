@@ -32,12 +32,7 @@ def fetch_data():
         return []
 
 def extract_info(rec_list):
-    """同时提取 URL 和 版本号"""
-    info = {
-        "urls": {},
-        "vers": {}
-    }
-    
+    info = { "urls": {}, "vers": {} }
     def get_rel_path(url):
         return url.replace("https://raw.githubusercontent.com/", "")
 
@@ -45,11 +40,9 @@ def extract_info(rec_list):
         name = item.get("name", "")
         url = item.get("url", "")
         ver = item.get("version", "未知")
-        
         if not url: continue
         path = get_rel_path(url)
 
-        # OK版
         if "OK" in ver:
             if "手機-32" in name: 
                 info["urls"]["OK_MOBILE_32"] = path
@@ -65,8 +58,6 @@ def extract_info(rec_list):
                 info["vers"]["OK_VER_PRO"] = ver
             elif "電視pro" in name.lower():
                 info["urls"]["OK_PRO_TV"] = path
-        
-        # 蜜蜂版
         elif "FM" in ver:
             if "手機-32" in name:
                 info["urls"]["FM_MOBILE_32"] = path
@@ -74,22 +65,16 @@ def extract_info(rec_list):
             elif "電視-32" in name:
                 info["urls"]["FM_TV_32"] = path
                 info["vers"]["FM_VER_TV"] = ver
-                
     return info
 
 def update_sh_file(info, new_version):
     if not os.path.exists(SH_FILE): return
     with open(SH_FILE, 'r', encoding='utf-8') as f: content = f.read()
 
-    # 1. 更新脚本自身版本
     content = re.sub(r'SCRIPT_VERSION="v[^"]+"', f'SCRIPT_VERSION="{new_version}"', content)
-    
-    # 2. 更新应用版本号显示 (Shell 变量)
     for key, val in info["vers"].items():
-        # 匹配 OK_VER_MOBILE="xxx"
         content = re.sub(rf'{key}="[^"]*"', f'{key}="{val}"', content)
-
-    # 3. 更新下载链接
+    
     mapping = info["urls"]
     updates = [
         (r'\["OK版手机_32"\]', "OK_MOBILE_32"),
@@ -111,12 +96,9 @@ def update_py_file(info):
     if not os.path.exists(PY_FILE): return
     with open(PY_FILE, 'r', encoding='utf-8') as f: content = f.read()
 
-    # 1. 更新应用版本号显示 (Python 变量)
     for key, val in info["vers"].items():
-        # 匹配 OK_VER_MOBILE = "xxx"
         content = re.sub(rf'{key}\s*=\s*"[^"]*"', f'{key} = "{val}"', content)
 
-    # 2. 更新下载链接
     mapping = info["urls"]
     updates = [
         (r'"OK版手机_32"', "OK_MOBILE_32"),
@@ -139,7 +121,6 @@ def update_py_file(info):
 def update_changelog(version, info):
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     vers = info["vers"]
-    # 构造日志内容
     entry = f"## [{version}] - {now_str}\n- 🚀 自动同步最新版本:\n"
     if "OK_VER_MOBILE" in vers: entry += f"  - OK版: {vers['OK_VER_MOBILE']}\n"
     if "FM_VER_MOBILE" in vers: entry += f"  - 蜜蜂版: {vers['FM_VER_MOBILE']}\n"
@@ -151,14 +132,14 @@ def update_changelog(version, info):
 
 if __name__ == "__main__":
     ver = get_new_version()
-    print(f"::set-output name=new_version::{ver}")
+    
+    # ✅ 核心修改：将版本号直接写入文件，而不是打印到控制台
+    with open("version.txt", "w", encoding="utf-8") as f:
+        f.write(ver)
+    print(f"Generated version: {ver} (saved to version.txt)")
     
     rec_list = fetch_data()
     info = extract_info(rec_list)
-    
-    # 打印提取到的信息用于调试
-    print("Version Info:", json.dumps(info["vers"], indent=2, ensure_ascii=False))
-
     update_sh_file(info, ver)
     update_py_file(info)
     update_changelog(ver, info)
