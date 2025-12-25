@@ -19,7 +19,7 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 REPO = "hc990275/apkdown" # 您的仓库
 
 # --- 工具自身版本号 (自动替换) ---
-TOOL_VERSION = "v2025.12.25_1444" 
+TOOL_VERSION = "v2025.12.25_1455" 
 
 # --- 应用版本号 (自动替换) ---
 OK_VER_MOBILE = "OK-3.5.7"
