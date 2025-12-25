@@ -2,14 +2,14 @@ name: Auto Update & Release (30min)
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 defaults:
   run:
     shell: bash
 
-# ✅ 全局设置 Python IO 编码为 UTF-8
+# 全局 UTF-8
 env:
   PYTHONIOENCODING: utf-8
 
@@ -36,9 +36,9 @@ jobs:
         run: |
           python auto_maintain.py
           
-          # ✅ 核心修改：直接从文件读取版本号，忽略所有控制台日志噪音
+          # ✅ 修复重点：直接从文件读取版本号
           if [ -f "version.txt" ]; then
-             # tr -d '\r' 去除 Windows 回车符，tr -d '\n' 去除换行
+             # 去除可能存在的特殊字符
              VER=$(cat version.txt | tr -d '\r' | tr -d '\n')
              echo "NEW_VERSION=$VER" >> $GITHUB_ENV
              echo "Extracted Version: $VER"
@@ -63,7 +63,7 @@ jobs:
           
           git commit -m "chore: force update to ${{ env.NEW_VERSION }} [skip ci]"
           
-          # 手动打标签，确保 Release 成功
+          # 手动打标签推送，确保 Release 成功
           git tag ${{ env.NEW_VERSION }}
           git push origin ${{ env.NEW_VERSION }}
           git push
